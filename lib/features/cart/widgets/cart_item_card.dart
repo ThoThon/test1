@@ -100,10 +100,10 @@ class CartItemCard extends StatelessWidget {
     );
   }
 
-  void _showDeleteConfirmDialog(BuildContext context, CartItem cartItem) {
+  void _showDeleteConfirmDialog(BuildContext parentContext, CartItem cartItem) {
     showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
+      context: parentContext,
+      builder: (dialogContext) => AlertDialog(
         title: const Text(
           "Xác nhận xóa",
           style: TextStyle(
@@ -121,7 +121,7 @@ class CartItemCard extends StatelessWidget {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text(
               "Hủy",
               style: TextStyle(color: Colors.grey),
@@ -129,8 +129,10 @@ class CartItemCard extends StatelessWidget {
           ),
           ElevatedButton(
             onPressed: () {
-              context.read<CartCubit>().removeFromCart(cartItem.productId);
-              Navigator.pop(context);
+              // Sử dụng parentContext để truy cập CartCubit
+              BlocProvider.of<CartCubit>(parentContext)
+                  .removeFromCart(cartItem.productId);
+              Navigator.pop(dialogContext);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
