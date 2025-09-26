@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../repositories/auth_repository.dart';
@@ -5,6 +6,11 @@ import 'login_event.dart';
 import 'login_state.dart';
 
 class LoginBloc extends Bloc<LoginEvent, LoginState> {
+  final TextEditingController taxController = TextEditingController();
+  final TextEditingController usernameController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+  final GlobalKey<FormState> formKey = GlobalKey<FormState>();
+
   LoginBloc() : super(const LoginState()) {
     on<LoginStarted>(_onLoginStarted);
     on<LoginFormChanged>(_onLoginFormChanged);
@@ -12,49 +18,29 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   }
 
   void _onLoginStarted(LoginStarted event, Emitter<LoginState> emit) {
-    // Load thông tin đã lưu từ storage
     final saved = AuthRepository.savedLoginInfo;
     if (saved != null) {
-      emit(state.copyWith(
-        taxCode: saved.taxCode,
-        username: saved.username,
-        password: saved.password,
-        isValid: _isFormValid(saved.taxCode, saved.username, saved.password),
-      ));
+      taxController.text = saved.taxCode;
+      usernameController.text = saved.username;
+      passwordController.text = saved.password;
     }
   }
 
   void _onLoginFormChanged(LoginFormChanged event, Emitter<LoginState> emit) {
     emit(state.copyWith(
-      taxCode: event.taxCode,
-      username: event.username,
-      password: event.password,
-      errorMessage: '', // Clear error khi user thay đổi form
-      isValid: _isFormValid(event.taxCode, event.username, event.password),
-      isLoginSuccess: false, // Reset login success
+      errorMessage: '',
+      isLoginSuccess: false,
     ));
   }
 
   Future<void> _onLoginSubmitted(
       LoginSubmitted event, Emitter<LoginState> emit) async {
-    // Validate form trước khi submit
-    if (!_isFormValid(event.taxCode, event.username, event.password)) {
-      emit(state.copyWith(
-        errorMessage: "Vui lòng điền đầy đủ thông tin hợp lệ",
-        isLoginSuccess: false,
-      ));
-      return;
-    }
+    if (!(formKey.currentState?.validate() ?? false)) return;
 
-    // Bắt đầu loading
     emit(state.copyWith(
-      isLoading: true,
-      errorMessage: '',
-      isLoginSuccess: false,
-    ));
+        isLoading: true, errorMessage: '', isLoginSuccess: false));
 
     try {
-      // Gọi API login
       final success = await AuthRepository.login(
         taxCode: event.taxCode.trim(),
         username: event.username.trim(),
@@ -62,33 +48,18 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       );
 
       if (success) {
-        emit(state.copyWith(
-          isLoading: false,
-          isLoginSuccess: true, // Đánh dấu thành công
-        ));
+        emit(state.copyWith(isLoading: false, isLoginSuccess: true));
       } else {
         emit(state.copyWith(
           isLoading: false,
           errorMessage: "Đăng nhập thất bại",
-          isLoginSuccess: false,
         ));
       }
     } catch (e) {
-      print('Lỗi login: $e');
       emit(state.copyWith(
         isLoading: false,
         errorMessage: "Thông tin đăng nhập không hợp lệ",
-        isLoginSuccess: false,
       ));
     }
-  }
-
-  bool _isFormValid(String taxCode, String username, String password) {
-    return taxCode.trim().isNotEmpty &&
-        taxCode.length == 10 &&
-        username.trim().isNotEmpty &&
-        password.trim().isNotEmpty &&
-        password.length >= 6 &&
-        password.length <= 50;
   }
 }

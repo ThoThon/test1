@@ -29,36 +29,6 @@ class LoginScreenView extends StatefulWidget {
 }
 
 class _LoginScreenViewState extends State<LoginScreenView> {
-  final formKey = GlobalKey<FormState>();
-  final taxController = TextEditingController();
-  final usernameController = TextEditingController();
-  final passwordController = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    // Listen for state changes to update controllers
-    context.read<LoginBloc>().stream.listen((state) {
-      if (taxController.text != state.taxCode) {
-        taxController.text = state.taxCode;
-      }
-      if (usernameController.text != state.username) {
-        usernameController.text = state.username;
-      }
-      if (passwordController.text != state.password) {
-        passwordController.text = state.password;
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    taxController.dispose();
-    usernameController.dispose();
-    passwordController.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -71,7 +41,6 @@ class _LoginScreenViewState extends State<LoginScreenView> {
         },
         child: BlocConsumer<LoginBloc, LoginState>(
           listener: (context, state) {
-            // Navigate on successful login
             if (state.isLoginSuccess) {
               Navigator.of(context).pushReplacementNamed('/home');
             }
@@ -80,7 +49,7 @@ class _LoginScreenViewState extends State<LoginScreenView> {
             return SingleChildScrollView(
               child: SafeArea(
                 child: Form(
-                  key: formKey,
+                  key: context.read<LoginBloc>().formKey,
                   child: _buildBodyPage(context, state),
                 ),
               ),
@@ -123,9 +92,10 @@ class _LoginScreenViewState extends State<LoginScreenView> {
   }
 
   Widget _buildTaxCode(BuildContext context) {
+    final bloc = context.read<LoginBloc>();
     return InputFieldBloc(
       label: "Mã số thuế",
-      controller: taxController,
+      controller: bloc.taxController,
       inputFormatter: [FilteringTextInputFormatter.digitsOnly],
       hintText: 'Mã số thuế',
       clearIconAsset: 'assets/icons/blank.svg',
@@ -139,19 +109,20 @@ class _LoginScreenViewState extends State<LoginScreenView> {
         return null;
       },
       onChanged: (value) {
-        context.read<LoginBloc>().add(LoginFormChanged(
-              taxCode: value,
-              username: usernameController.text,
-              password: passwordController.text,
-            ));
+        bloc.add(LoginFormChanged(
+          taxCode: value,
+          username: bloc.usernameController.text,
+          password: bloc.passwordController.text,
+        ));
       },
     );
   }
 
   Widget _buildUserName(BuildContext context) {
+    final bloc = context.read<LoginBloc>();
     return InputFieldBloc(
       label: "Tài khoản",
-      controller: usernameController,
+      controller: bloc.usernameController,
       hintText: 'Tài khoản',
       clearIconAsset: 'assets/icons/blank.svg',
       validator: (value) {
@@ -161,19 +132,20 @@ class _LoginScreenViewState extends State<LoginScreenView> {
         return null;
       },
       onChanged: (value) {
-        context.read<LoginBloc>().add(LoginFormChanged(
-              taxCode: taxController.text,
-              username: value,
-              password: passwordController.text,
-            ));
+        bloc.add(LoginFormChanged(
+          taxCode: bloc.taxController.text,
+          username: value,
+          password: bloc.passwordController.text,
+        ));
       },
     );
   }
 
   Widget _buildPassword(BuildContext context) {
+    final bloc = context.read<LoginBloc>();
     return InputFieldBloc(
       label: "Mật khẩu",
-      controller: passwordController,
+      controller: bloc.passwordController,
       hintText: 'Mật khẩu',
       showPassword: true,
       validator: (value) {
@@ -181,28 +153,38 @@ class _LoginScreenViewState extends State<LoginScreenView> {
           return 'Mật khẩu không được để trống';
         }
         if (value.length < 6 || value.length > 50) {
-          return 'Mật khóa chỉ từ 6 đến 50 ký tự';
+          return 'Mật khẩu chỉ từ 6 đến 50 ký tự';
         }
         return null;
       },
       onChanged: (value) {
-        context.read<LoginBloc>().add(LoginFormChanged(
-              taxCode: taxController.text,
-              username: usernameController.text,
-              password: value,
-            ));
+        bloc.add(LoginFormChanged(
+          taxCode: bloc.taxController.text,
+          username: bloc.usernameController.text,
+          password: value,
+        ));
       },
     );
   }
 
   Widget _buttonLogin(BuildContext context, LoginState state) {
+    final bloc = context.read<LoginBloc>();
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: SizedBox(
         width: 400,
         height: 60,
         child: ElevatedButton(
-          onPressed: state.isLoading ? null : () => _onLoginPressed(context),
+          onPressed: state.isLoading
+              ? null
+              : () {
+                  if (!(bloc.formKey.currentState?.validate() ?? false)) return;
+                  bloc.add(LoginSubmitted(
+                    taxCode: bloc.taxController.text.trim(),
+                    username: bloc.usernameController.text.trim(),
+                    password: bloc.passwordController.text.trim(),
+                  ));
+                },
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFFf24e1e),
             foregroundColor: Colors.white,
@@ -214,9 +196,7 @@ class _LoginScreenViewState extends State<LoginScreenView> {
               ? const SizedBox(
                   width: 20,
                   height: 20,
-                  child: CircularProgressIndicator(
-                    color: Colors.white,
-                  ),
+                  child: CircularProgressIndicator(color: Colors.white),
                 )
               : const Text(
                   "Đăng nhập",
@@ -231,18 +211,6 @@ class _LoginScreenViewState extends State<LoginScreenView> {
     );
   }
 
-  void _onLoginPressed(BuildContext context) {
-    if (!(formKey.currentState?.validate() ?? false)) {
-      return;
-    }
-
-    context.read<LoginBloc>().add(LoginSubmitted(
-          taxCode: taxController.text.trim(),
-          username: usernameController.text.trim(),
-          password: passwordController.text.trim(),
-        ));
-  }
-
   void _showErrorDialog(BuildContext context, String message) {
     showDialog(
       context: context,
@@ -250,7 +218,8 @@ class _LoginScreenViewState extends State<LoginScreenView> {
         return AlertDialog(
           title: const Text("Lỗi"),
           content: Text(
-              message.isNotEmpty ? message : "Có lỗi xảy ra khi đăng nhập"),
+            message.isNotEmpty ? message : "Có lỗi xảy ra khi đăng nhập",
+          ),
           backgroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15),
