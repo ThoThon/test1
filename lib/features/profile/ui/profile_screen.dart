@@ -1,5 +1,6 @@
-import 'package:app_crud_bloc/features/login/ui/login_screen.dart';
 import 'package:flutter/material.dart';
+
+import '../../login/ui/login_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
