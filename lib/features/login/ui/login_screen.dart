@@ -15,7 +15,7 @@ class LoginScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => LoginBloc(),
+      create: (context) => LoginBloc()..add(LoginStarted()),
       child: const LoginScreenView(),
     );
   }
@@ -108,6 +108,13 @@ class _LoginScreenViewState extends State<LoginScreenView> {
         }
         return null;
       },
+      onChanged: (value) {
+        bloc.add(LoginFormChanged(
+          taxCode: value,
+          username: bloc.usernameController.text,
+          password: bloc.passwordController.text,
+        ));
+      },
     );
   }
 
@@ -123,6 +130,13 @@ class _LoginScreenViewState extends State<LoginScreenView> {
           return 'Tài khoản không được để trống';
         }
         return null;
+      },
+      onChanged: (value) {
+        bloc.add(LoginFormChanged(
+          taxCode: bloc.taxController.text,
+          username: value,
+          password: bloc.passwordController.text,
+        ));
       },
     );
   }
@@ -142,6 +156,13 @@ class _LoginScreenViewState extends State<LoginScreenView> {
           return 'Mật khẩu chỉ từ 6 đến 50 ký tự';
         }
         return null;
+      },
+      onChanged: (value) {
+        bloc.add(LoginFormChanged(
+          taxCode: bloc.taxController.text,
+          username: bloc.usernameController.text,
+          password: value,
+        ));
       },
     );
   }

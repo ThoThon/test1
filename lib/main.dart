@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'features/cart/ui/cart_screen.dart';
 import 'features/home/ui/home_screen.dart';
 import 'features/login/ui/login_screen.dart';
 import 'repositories/auth_repository.dart';
@@ -13,25 +14,25 @@ void main() async {
 
   final bool hasLogin = AuthRepository.isLoggedIn;
 
-  runApp(MyApp(hasLogin: hasLogin));
+  runApp(MyApp(initialRoute: hasLogin ? '/home' : '/login'));
 }
 
 class MyApp extends StatelessWidget {
-  final bool hasLogin;
-  const MyApp({super.key, required this.hasLogin});
+  final String initialRoute;
+  const MyApp({super.key, required this.initialRoute});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Flutter Bloc App',
       theme: ThemeData(
         textTheme: GoogleFonts.nunitoSansTextTheme(),
       ),
-      home: hasLogin ? const HomeScreen() : const LoginScreen(),
+      initialRoute: initialRoute,
       routes: {
         '/login': (context) => const LoginScreen(),
         '/home': (context) => const HomeScreen(),
+        '/cart': (context) => const CartScreen(),
       },
     );
   }

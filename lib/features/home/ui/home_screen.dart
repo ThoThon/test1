@@ -3,9 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../mainpage/ui/mainpage_screen.dart';
 import '../../profile/ui/profile_screen.dart';
-import '../bloc/home_bloc.dart';
-import '../bloc/home_event.dart';
-import '../bloc/home_state.dart';
+import '../cubit/home_cubit.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -13,7 +11,7 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => HomeBloc(),
+      create: (context) => HomeCubit(),
       child: const HomeScreenView(),
     );
   }
@@ -29,25 +27,25 @@ class HomeScreenView extends StatelessWidget {
       const ProfileScreen(),
     ];
 
-    return BlocBuilder<HomeBloc, HomeState>(
-      builder: (context, state) {
+    return BlocBuilder<HomeCubit, int>(
+      builder: (context, currentIndex) {
         return Scaffold(
           appBar: AppBar(
             title: Text(
-              _getAppBarTitle(state.currentIndex),
+              _getAppBarTitle(currentIndex),
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             automaticallyImplyLeading: false,
           ),
           body: IndexedStack(
-            index: state.currentIndex,
+            index: currentIndex,
             children: screens,
           ),
           bottomNavigationBar: BottomNavigationBar(
             type: BottomNavigationBarType.fixed,
-            currentIndex: state.currentIndex,
+            currentIndex: currentIndex,
             onTap: (index) {
-              context.read<HomeBloc>().add(HomeTabChanged(index));
+              context.read<HomeCubit>().changeTab(index);
             },
             items: const [
               BottomNavigationBarItem(
