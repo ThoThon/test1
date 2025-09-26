@@ -27,8 +27,29 @@ class MainpageScreen extends StatelessWidget {
   }
 }
 
-class MainpageScreenView extends StatelessWidget {
+class MainpageScreenView extends StatefulWidget {
   const MainpageScreenView({super.key});
+
+  @override
+  State<MainpageScreenView> createState() => _MainpageScreenViewState();
+}
+
+class _MainpageScreenViewState extends State<MainpageScreenView> {
+  @override
+  void initState() {
+    super.initState();
+    // Load cart items when screen initializes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<CartCubit>().loadCartItems();
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Reload cart items when returning from other screens
+    context.read<CartCubit>().loadCartItems();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -118,7 +139,13 @@ class MainpageScreenView extends StatelessWidget {
               clipBehavior: Clip.none,
               children: [
                 FloatingActionButton(
-                  onPressed: () => Navigator.pushNamed(context, '/cart'),
+                  onPressed: () async {
+                    await Navigator.pushNamed(context, '/cart');
+                    // Reload cart items when returning from cart screen
+                    if (mounted) {
+                      context.read<CartCubit>().loadCartItems();
+                    }
+                  },
                   backgroundColor: const Color(0xFFf24e1e),
                   child: const Icon(
                     Icons.shopping_cart_outlined,
