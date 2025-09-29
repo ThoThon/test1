@@ -24,11 +24,16 @@ class ProductCard extends StatelessWidget {
           Expanded(
             child: InkWell(
               onTap: () async {
+                // QUAN TRỌNG: Navigate đúng cách
                 await Navigator.pushNamed(
                   context,
                   '/product-detail',
                   arguments: product.id,
                 );
+                // Reload cart sau khi quay về
+                if (context.mounted) {
+                  context.read<CartCubit>().loadCartItems();
+                }
               },
               child: Image.network(
                 product.cover,
