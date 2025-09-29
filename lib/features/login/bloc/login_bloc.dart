@@ -12,25 +12,17 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
 
   LoginBloc() : super(const LoginState()) {
-    on<LoginStarted>(_onLoginStarted);
-    on<LoginFormChanged>(_onLoginFormChanged);
+    _loadSavedLoginInfo();
     on<LoginSubmitted>(_onLoginSubmitted);
   }
 
-  void _onLoginStarted(LoginStarted event, Emitter<LoginState> emit) {
+  void _loadSavedLoginInfo() {
     final saved = AuthRepository.savedLoginInfo;
     if (saved != null) {
       taxController.text = saved.taxCode;
       usernameController.text = saved.username;
       passwordController.text = saved.password;
     }
-  }
-
-  void _onLoginFormChanged(LoginFormChanged event, Emitter<LoginState> emit) {
-    emit(state.copyWith(
-      errorMessage: '',
-      isLoginSuccess: false,
-    ));
   }
 
   Future<void> _onLoginSubmitted(
@@ -61,5 +53,13 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         errorMessage: "Thông tin đăng nhập không hợp lệ",
       ));
     }
+  }
+
+  @override
+  Future<void> close() {
+    taxController.dispose();
+    usernameController.dispose();
+    passwordController.dispose();
+    return super.close();
   }
 }
