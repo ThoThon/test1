@@ -1,4 +1,4 @@
-import '../../features/mainpage/models/product_model.dart';
+import '../../features/product_list_page/models/product_model.dart';
 import 'base_response.dart';
 import 'base_response_list.dart';
 import 'dio_client.dart';

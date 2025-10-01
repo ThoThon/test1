@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../mainpage/ui/mainpage_screen.dart';
+import '../../product_list_page/ui/product_list_page_screen.dart';
 import '../../profile/ui/profile_screen.dart';
 import '../cubit/home_cubit.dart';
 
@@ -23,7 +23,7 @@ class HomeScreenView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screens = [
-      const MainpageScreen(),
+      const ProductListPageScreen(),
       const ProfileScreen(),
     ];
 

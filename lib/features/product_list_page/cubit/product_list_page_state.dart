@@ -2,29 +2,38 @@ import 'package:equatable/equatable.dart';
 
 import '../models/product_model.dart';
 
-class MainpageState extends Equatable {
+class ProductListPageState extends Equatable {
   final List<Product> products;
   final bool isLoading;
   final String errorMessage;
+  final int totalCartItems;
 
-  const MainpageState({
+  const ProductListPageState({
     this.products = const [],
     this.isLoading = false,
     this.errorMessage = '',
+    this.totalCartItems = 0,
   });
 
-  MainpageState copyWith({
+  ProductListPageState copyWith({
     List<Product>? products,
     bool? isLoading,
     String? errorMessage,
+    int? totalCartItems,
   }) {
-    return MainpageState(
+    return ProductListPageState(
       products: products ?? this.products,
       isLoading: isLoading ?? this.isLoading,
       errorMessage: errorMessage ?? this.errorMessage,
+      totalCartItems: totalCartItems ?? this.totalCartItems,
     );
   }
 
   @override
-  List<Object> get props => [products, isLoading, errorMessage];
+  List<Object> get props => [
+        products,
+        isLoading,
+        errorMessage,
+        totalCartItems,
+      ];
 }

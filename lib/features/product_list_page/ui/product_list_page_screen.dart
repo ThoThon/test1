@@ -2,58 +2,41 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pull_to_refresh_flutter3/pull_to_refresh_flutter3.dart';
 
-import '../../cart/cubit/cart_cubit.dart';
-import '../../cart/cubit/cart_state.dart';
-import '../cubit/mainpage_cubit.dart';
-import '../cubit/mainpage_state.dart';
+import '../cubit/product_list_page_cubit.dart';
+import '../cubit/product_list_page_state.dart';
 import '../widgets/product_card.dart';
 
-class MainpageScreen extends StatelessWidget {
-  const MainpageScreen({super.key});
+class ProductListPageScreen extends StatelessWidget {
+  const ProductListPageScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider(
-          create: (context) => MainpageCubit(),
-        ),
-        BlocProvider(
-          create: (context) => CartCubit(),
-        ),
-      ],
-      child: const MainpageScreenView(),
+    return BlocProvider(
+      create: (context) => ProductListPageCubit(),
+      child: const ProductListPageScreenView(),
     );
   }
 }
 
-class MainpageScreenView extends StatefulWidget {
-  const MainpageScreenView({super.key});
+class ProductListPageScreenView extends StatefulWidget {
+  const ProductListPageScreenView({super.key});
 
   @override
-  State<MainpageScreenView> createState() => _MainpageScreenViewState();
+  State<ProductListPageScreenView> createState() =>
+      _ProductListPageScreenViewState();
 }
 
-class _MainpageScreenViewState extends State<MainpageScreenView> {
-  @override
-  void initState() {
-    super.initState();
-    // Load cart items when screen initializes
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<CartCubit>().loadCartItems();
-    });
-  }
-
+class _ProductListPageScreenViewState extends State<ProductListPageScreenView> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Reload cart items when returning from other screens
-    context.read<CartCubit>().loadCartItems();
+    // Reload cart status when returning from other screens
+    context.read<ProductListPageCubit>().reloadCartStatus();
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<MainpageCubit, MainpageState>(
+    return BlocListener<ProductListPageCubit, ProductListPageState>(
       listener: (context, state) {
         if (state.errorMessage.isNotEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -86,8 +69,13 @@ class _MainpageScreenViewState extends State<MainpageScreenView> {
                   ),
                   // Icon thêm sản phẩm (+)
                   IconButton(
-                    onPressed: () =>
-                        Navigator.pushNamed(context, '/product-create'),
+                    onPressed: () async {
+                      await Navigator.pushNamed(context, '/product-create');
+                      // Reload products after creating
+                      if (mounted) {
+                        context.read<ProductListPageCubit>().onRefresh();
+                      }
+                    },
                     icon: const Icon(
                       Icons.add_circle_outline,
                       size: 30,
@@ -100,7 +88,7 @@ class _MainpageScreenViewState extends State<MainpageScreenView> {
 
             // Danh sách sản phẩm
             Expanded(
-              child: BlocBuilder<MainpageCubit, MainpageState>(
+              child: BlocBuilder<ProductListPageCubit, ProductListPageState>(
                 builder: (context, state) {
                   if (state.products.isEmpty && state.isLoading) {
                     return const Center(
@@ -115,11 +103,14 @@ class _MainpageScreenViewState extends State<MainpageScreenView> {
                   }
 
                   return SmartRefresher(
-                    controller: context.read<MainpageCubit>().refreshController,
+                    controller:
+                        context.read<ProductListPageCubit>().refreshController,
                     enablePullDown: true,
                     enablePullUp: true,
-                    onRefresh: () => context.read<MainpageCubit>().onRefresh(),
-                    onLoading: () => context.read<MainpageCubit>().onLoadMore(),
+                    onRefresh: () =>
+                        context.read<ProductListPageCubit>().onRefresh(),
+                    onLoading: () =>
+                        context.read<ProductListPageCubit>().onLoadMore(),
                     header: _buildRefreshHeader(),
                     footer: _buildLoadMoreFooter(),
                     child: _buildProductGrid(state.products),
@@ -131,9 +122,10 @@ class _MainpageScreenViewState extends State<MainpageScreenView> {
         ),
 
         // FloatingActionButton thành giỏ hàng
-        floatingActionButton: BlocBuilder<CartCubit, CartState>(
-          builder: (context, cartState) {
-            final count = cartState.totalItems;
+        floatingActionButton:
+            BlocBuilder<ProductListPageCubit, ProductListPageState>(
+          builder: (context, state) {
+            final count = state.totalCartItems;
 
             return Stack(
               clipBehavior: Clip.none,
@@ -141,9 +133,9 @@ class _MainpageScreenViewState extends State<MainpageScreenView> {
                 FloatingActionButton(
                   onPressed: () async {
                     await Navigator.pushNamed(context, '/cart');
-                    // Reload cart items when returning from cart screen
+                    // Reload cart status when returning from cart screen
                     if (mounted) {
-                      context.read<CartCubit>().loadCartItems();
+                      context.read<ProductListPageCubit>().reloadCartStatus();
                     }
                   },
                   backgroundColor: const Color(0xFFf24e1e),
@@ -215,7 +207,7 @@ class _MainpageScreenViewState extends State<MainpageScreenView> {
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
-            onPressed: () => context.read<MainpageCubit>().onRefresh(),
+            onPressed: () => context.read<ProductListPageCubit>().onRefresh(),
             icon: const Icon(Icons.refresh, color: Colors.white),
             label: const Text(
               "Làm mới",

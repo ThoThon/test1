@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-import '../../mainpage/models/product_model.dart';
+import '../../product_list_page/models/product_model.dart';
 
 enum ProductDetailStatus {
   initial,

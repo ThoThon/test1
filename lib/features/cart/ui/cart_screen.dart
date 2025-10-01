@@ -39,8 +39,7 @@ class CartScreenView extends StatelessWidget {
               return state.cartItems.isEmpty
                   ? const SizedBox.shrink()
                   : TextButton(
-                      onPressed: () =>
-                          context.read<CartCubit>().clearCart(context),
+                      onPressed: () => _showClearCartDialog(context),
                       child: const Text("Xóa tất cả",
                           style: TextStyle(
                               color: Colors.red, fontWeight: FontWeight.w600)),
@@ -176,6 +175,49 @@ class CartScreenView extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showClearCartDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text(
+          "Xác nhận",
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: const Text(
+          "Bạn có chắc muốn xóa tất cả sản phẩm?",
+          style: TextStyle(color: Colors.black),
+        ),
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text(
+              "Hủy",
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              context.read<CartCubit>().clearCart();
+              Navigator.pop(dialogContext);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text("Xóa"),
+          ),
+        ],
       ),
     );
   }

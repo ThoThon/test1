@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../cart/cubit/cart_cubit.dart';
-import '../../cart/cubit/cart_state.dart';
+import '../cubit/product_list_page_cubit.dart';
 import '../models/product_model.dart';
 
 class ProductCard extends StatelessWidget {
@@ -24,15 +23,15 @@ class ProductCard extends StatelessWidget {
           Expanded(
             child: InkWell(
               onTap: () async {
-                // QUAN TRỌNG: Navigate đúng cách
+                // Navigate đến product detail
                 await Navigator.pushNamed(
                   context,
                   '/product-detail',
                   arguments: product.id,
                 );
-                // Reload cart sau khi quay về
+                // Reload cart status sau khi quay về
                 if (context.mounted) {
-                  context.read<CartCubit>().loadCartItems();
+                  context.read<ProductListPageCubit>().reloadCartStatus();
                 }
               },
               child: Image.network(
@@ -99,52 +98,44 @@ class ProductCard extends StatelessWidget {
                 SizedBox(
                   width: double.infinity,
                   height: 32,
-                  child: BlocBuilder<CartCubit, CartState>(
-                    builder: (context, state) {
-                      final isInCart = state.cartItems
-                          .any((item) => item.productId == product.id);
-
-                      return ElevatedButton.icon(
-                        onPressed: product.quantity > 0
-                            ? () {
-                                if (isInCart) {
-                                  context
-                                      .read<CartCubit>()
-                                      .removeFromCart(product.id);
-                                } else {
-                                  context.read<CartCubit>().addToCart(product);
-                                }
-                              }
-                            : null,
-                        icon: Icon(
-                          isInCart
-                              ? Icons.remove_shopping_cart
-                              : Icons.add_shopping_cart,
-                          size: 16,
-                          color: Colors.white,
-                        ),
-                        label: Text(
-                          isInCart ? "Xóa khỏi giỏ" : "Thêm vào giỏ",
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: product.quantity > 0
-                              ? (isInCart
-                                  ? Colors.orange
-                                  : const Color(0xFFf24e1e))
-                              : Colors.grey,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                        ),
-                      );
-                    },
+                  child: ElevatedButton.icon(
+                    onPressed: product.quantity > 0
+                        ? () {
+                            final cubit = context.read<ProductListPageCubit>();
+                            if (product.isInCart) {
+                              cubit.removeFromCart(product.id);
+                            } else {
+                              cubit.addToCart(product);
+                            }
+                          }
+                        : null,
+                    icon: Icon(
+                      product.isInCart
+                          ? Icons.remove_shopping_cart
+                          : Icons.add_shopping_cart,
+                      size: 16,
+                      color: Colors.white,
+                    ),
+                    label: Text(
+                      product.isInCart ? "Xóa khỏi giỏ" : "Thêm vào giỏ",
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: product.quantity > 0
+                          ? (product.isInCart
+                              ? Colors.orange
+                              : const Color(0xFFf24e1e))
+                          : Colors.grey,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                    ),
                   ),
                 ),
               ],

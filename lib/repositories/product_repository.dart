@@ -1,4 +1,4 @@
-import '../features/mainpage/models/product_model.dart';
+import '../features/product_list_page/models/product_model.dart';
 import '../services/remote/product_apiservice.dart';
 
 class ProductRepository {
