@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../repositories/product_repository.dart';
@@ -113,11 +112,16 @@ class ProductDetailCubit extends Cubit<ProductDetailState> {
     }
   }
 
-  Future<void> deleteProduct(BuildContext context) async {
-    if (productId == null) return;
+  void requestDelete() {
+    emit(state.copyWith(showDeleteDialog: true));
+  }
 
-    final confirmed = await _showConfirmDeleteDialog(context);
-    if (!confirmed) return;
+  void deleteDialogShown() {
+    emit(state.copyWith(showDeleteDialog: false));
+  }
+
+  Future<void> confirmDelete() async {
+    if (productId == null) return;
 
     emit(state.copyWith(status: ProductDetailStatus.deleting));
 
@@ -148,47 +152,5 @@ class ProductDetailCubit extends Cubit<ProductDetailState> {
       status: ProductDetailStatus.loaded,
       errorMessage: '',
     ));
-  }
-
-  Future<bool> _showConfirmDeleteDialog(BuildContext context) async {
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text(
-          "Xác nhận xóa",
-          style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        content: const Text(
-          "Bạn có chắc chắn muốn xóa sản phẩm này?\nHành động này không thể hoàn tác.",
-          style: TextStyle(color: Colors.black),
-        ),
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(15),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text(
-              "Hủy",
-              style: TextStyle(color: Colors.grey),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text("Xóa"),
-          ),
-        ],
-      ),
-    );
-
-    return result ?? false;
   }
 }

@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../features/cart/cubit/cart_cubit.dart';
 import '../features/cart/ui/cart_screen.dart';
 import '../features/home/ui/home_screen.dart';
 import '../features/login/ui/login_screen.dart';
@@ -18,12 +16,7 @@ class AppPages {
         return MaterialPageRoute(builder: (_) => const HomeScreen());
 
       case Routes.cart:
-        return MaterialPageRoute(
-          builder: (_) => BlocProvider(
-            create: (_) => CartCubit(),
-            child: const CartScreen(),
-          ),
-        );
+        return MaterialPageRoute(builder: (_) => const CartScreen());
 
       case Routes.productDetail:
         final int? productId = settings.arguments as int?;

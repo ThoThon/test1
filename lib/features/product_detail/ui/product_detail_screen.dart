@@ -47,6 +47,7 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
   Widget build(BuildContext context) {
     return BlocConsumer<ProductDetailCubit, ProductDetailState>(
       listener: (context, state) {
+        // Load product data vào form
         if (state.status == ProductDetailStatus.loaded &&
             state.product != null &&
             state.isEditMode) {
@@ -56,6 +57,13 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
           _coverController.text = state.product!.cover;
         }
 
+        // Show delete dialog
+        if (state.showDeleteDialog) {
+          context.read<ProductDetailCubit>().deleteDialogShown();
+          _showConfirmDeleteDialog(context);
+        }
+
+        // Saved
         if (state.status == ProductDetailStatus.saved) {
           Navigator.pop(context, true);
           ScaffoldMessenger.of(context).showSnackBar(
@@ -70,6 +78,7 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
           );
         }
 
+        // Deleted
         if (state.status == ProductDetailStatus.deleted) {
           Navigator.pop(context, true);
           ScaffoldMessenger.of(context).showSnackBar(
@@ -80,6 +89,7 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
           );
         }
 
+        // Error
         if (state.status == ProductDetailStatus.error &&
             state.errorMessage.isNotEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -204,8 +214,13 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: ElevatedButton(
-                          onPressed:
-                              isLoading ? null : () => _handleDelete(context),
+                          onPressed: isLoading
+                              ? null
+                              : () {
+                                  context
+                                      .read<ProductDetailCubit>()
+                                      .requestDelete();
+                                },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.red,
                             foregroundColor: Colors.white,
@@ -252,7 +267,47 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
     }
   }
 
-  void _handleDelete(BuildContext context) {
-    context.read<ProductDetailCubit>().deleteProduct(context);
+  Future<void> _showConfirmDeleteDialog(BuildContext context) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text(
+          "Xác nhận xóa",
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: const Text(
+          "Bạn có chắc chắn muốn xóa sản phẩm này?\nHành động này không thể hoàn tác.",
+          style: TextStyle(color: Colors.black),
+        ),
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text(
+              "Hủy",
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text("Xóa"),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true && context.mounted) {
+      context.read<ProductDetailCubit>().confirmDelete();
+    }
   }
 }

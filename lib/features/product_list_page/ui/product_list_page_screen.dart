@@ -28,13 +28,6 @@ class ProductListPageScreenView extends StatefulWidget {
 
 class _ProductListPageScreenViewState extends State<ProductListPageScreenView> {
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Reload cart status when returning from other screens
-    context.read<ProductListPageCubit>().reloadCartStatus();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return BlocListener<ProductListPageCubit, ProductListPageState>(
       listener: (context, state) {
@@ -71,7 +64,7 @@ class _ProductListPageScreenViewState extends State<ProductListPageScreenView> {
                   IconButton(
                     onPressed: () async {
                       await Navigator.pushNamed(context, '/product-create');
-                      // Reload products after creating
+                      // Reload sau khi tạo sản phẩm mới
                       if (mounted) {
                         context.read<ProductListPageCubit>().onRefresh();
                       }
@@ -121,7 +114,7 @@ class _ProductListPageScreenViewState extends State<ProductListPageScreenView> {
           ],
         ),
 
-        // FloatingActionButton thành giỏ hàng
+        // FloatingActionButton giỏ hàng
         floatingActionButton:
             BlocBuilder<ProductListPageCubit, ProductListPageState>(
           builder: (context, state) {
@@ -133,7 +126,7 @@ class _ProductListPageScreenViewState extends State<ProductListPageScreenView> {
                 FloatingActionButton(
                   onPressed: () async {
                     await Navigator.pushNamed(context, '/cart');
-                    // Reload cart status when returning from cart screen
+                    // Reload sau khi quay về từ giỏ hàng
                     if (mounted) {
                       context.read<ProductListPageCubit>().reloadCartStatus();
                     }

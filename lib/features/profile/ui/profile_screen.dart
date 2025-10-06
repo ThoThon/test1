@@ -21,19 +21,35 @@ class ProfileScreenView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            const SizedBox(height: 40),
-            _buildProfileHeader(context),
-            const SizedBox(height: 40),
-            _buildUserInfo(context),
-            const SizedBox(height: 300),
-            _buildLogoutButton(context),
-            const SizedBox(height: 20),
-          ],
+    return BlocListener<ProfileCubit, ProfileState>(
+      listener: (context, state) {
+        if (state.showLogoutDialog) {
+          context.read<ProfileCubit>().dialogShown();
+          _showLogoutConfirmDialog(context);
+        }
+
+        if (state.logoutSuccess) {
+          context.read<ProfileCubit>().resetLogoutSuccess();
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            '/login',
+            (route) => false,
+          );
+        }
+      },
+      child: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              const SizedBox(height: 40),
+              _buildProfileHeader(context),
+              const SizedBox(height: 40),
+              _buildUserInfo(context),
+              const SizedBox(height: 300),
+              _buildLogoutButton(context),
+              const SizedBox(height: 20),
+            ],
+          ),
         ),
       ),
     );
@@ -157,7 +173,9 @@ class ProfileScreenView extends StatelessWidget {
           return ElevatedButton.icon(
             onPressed: state.isLoggingOut
                 ? null
-                : () => context.read<ProfileCubit>().logout(context),
+                : () {
+                    context.read<ProfileCubit>().requestLogout();
+                  },
             icon: state.isLoggingOut
                 ? const SizedBox(
                     width: 20,
@@ -192,5 +210,69 @@ class ProfileScreenView extends StatelessWidget {
         },
       ),
     );
+  }
+
+  Future<void> _showLogoutConfirmDialog(BuildContext context) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text(
+          "Xác nhận đăng xuất",
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
+        ),
+        content: const Text(
+          "Bạn có chắc chắn muốn đăng xuất?\nTất cả thông tin giỏ hàng sẽ bị xóa.",
+          style: TextStyle(
+            color: Colors.black,
+            fontSize: 16,
+          ),
+        ),
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text(
+              "Hủy",
+              style: TextStyle(
+                color: Colors.grey,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFf24e1e),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text(
+              "Đăng xuất",
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    // Xử lý kết quả từ dialog
+    if (result == true && context.mounted) {
+      context.read<ProfileCubit>().confirmLogout();
+    }
   }
 }
