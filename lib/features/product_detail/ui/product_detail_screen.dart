@@ -7,12 +7,12 @@ import '../cubit/product_detail_state.dart';
 import '../widgets/input_field.dart';
 
 class ProductDetailScreen extends StatelessWidget {
-  const ProductDetailScreen({super.key});
+  final int? productId;
+
+  const ProductDetailScreen({super.key, this.productId});
 
   @override
   Widget build(BuildContext context) {
-    final int? productId = ModalRoute.of(context)?.settings.arguments as int?;
-
     return BlocProvider(
       create: (context) => ProductDetailCubit(productId: productId),
       child: const _ProductDetailView(),
@@ -25,65 +25,96 @@ class _ProductDetailView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<ProductDetailCubit, ProductDetailState>(
-      listener: (context, state) {
-        // Save success
-        if (state.saveProductStatus == LoadingStatus.loaded) {
-          context.read<ProductDetailCubit>().resetSaveStatus();
-          Navigator.pop(context, true);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                state.isEditMode
-                    ? "Cập nhật sản phẩm thành công!"
-                    : "Tạo sản phẩm thành công!",
-              ),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-
-        // Delete success
-        if (state.deleteProductStatus == LoadingStatus.loaded) {
-          context.read<ProductDetailCubit>().resetDeleteStatus();
-          Navigator.pop(context, true);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("Xóa sản phẩm thành công!"),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-
-        // Show error from any operation
-        if (state.errorMessage.isNotEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.errorMessage),
-              backgroundColor: Colors.red,
-            ),
-          );
-          context.read<ProductDetailCubit>().clearError();
-        }
-      },
-      builder: (context, state) {
-        return Scaffold(
-          backgroundColor: Colors.white,
-          appBar: AppBar(
-            title: Text(
-              state.isEditMode ? "Chi tiết sản phẩm" : "Thêm sản phẩm mới",
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios),
-              onPressed: () => Navigator.pop(context),
-            ),
+    return MultiBlocListener(
+      listeners: [
+        // Listener cho saveProductStatus
+        BlocListener<ProductDetailCubit, ProductDetailState>(
+          listenWhen: (previous, current) =>
+              previous.saveProductStatus != current.saveProductStatus,
+          listener: (context, state) {
+            if (state.saveProductStatus == LoadingStatus.loaded) {
+              Navigator.pop(context, true);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    state.isEditMode
+                        ? "Cập nhật sản phẩm thành công!"
+                        : "Tạo sản phẩm thành công!",
+                  ),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            } else if (state.saveProductStatus == LoadingStatus.error) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.errorMessage),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          },
+        ),
+        // Listener cho deleteProductStatus
+        BlocListener<ProductDetailCubit, ProductDetailState>(
+          listenWhen: (previous, current) =>
+              previous.deleteProductStatus != current.deleteProductStatus,
+          listener: (context, state) {
+            if (state.deleteProductStatus == LoadingStatus.loaded) {
+              Navigator.pop(context, true);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("Xóa sản phẩm thành công!"),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            } else if (state.deleteProductStatus == LoadingStatus.error) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.errorMessage),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          },
+        ),
+        // Listener cho getProductDetailStatus error
+        BlocListener<ProductDetailCubit, ProductDetailState>(
+          listenWhen: (previous, current) =>
+              previous.getProductDetailStatus != current.getProductDetailStatus,
+          listener: (context, state) {
+            if (state.getProductDetailStatus == LoadingStatus.error &&
+                state.errorMessage.isNotEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.errorMessage),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          },
+        ),
+      ],
+      child: BlocBuilder<ProductDetailCubit, ProductDetailState>(
+        builder: (context, state) {
+          return Scaffold(
             backgroundColor: Colors.white,
-            elevation: 1,
-          ),
-          body: _buildBody(context, state),
-        );
-      },
+            appBar: AppBar(
+              title: Text(
+                state.isEditMode ? "Chi tiết sản phẩm" : "Thêm sản phẩm mới",
+                style:
+                    const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back_ios),
+                onPressed: () => Navigator.pop(context),
+              ),
+              backgroundColor: Colors.white,
+              elevation: 1,
+            ),
+            body: _buildBody(context, state),
+          );
+        },
+      ),
     );
   }
 

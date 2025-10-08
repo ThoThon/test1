@@ -164,18 +164,6 @@ class ProductDetailCubit extends Cubit<ProductDetailState> {
     }
   }
 
-  void clearError() {
-    emit(state.copyWith(errorMessage: ''));
-  }
-
-  void resetSaveStatus() {
-    emit(state.copyWith(saveProductStatus: LoadingStatus.initial));
-  }
-
-  void resetDeleteStatus() {
-    emit(state.copyWith(deleteProductStatus: LoadingStatus.initial));
-  }
-
   @override
   Future<void> close() {
     nameController.dispose();

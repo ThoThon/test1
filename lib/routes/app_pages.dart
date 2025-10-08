@@ -21,14 +21,12 @@ class AppPages {
       case Routes.productDetail:
         final int? productId = settings.arguments as int?;
         return MaterialPageRoute(
-          builder: (_) => const ProductDetailScreen(),
-          settings: RouteSettings(arguments: productId),
+          builder: (_) => ProductDetailScreen(productId: productId),
         );
 
       case Routes.productCreate:
         return MaterialPageRoute(
-          builder: (_) => const ProductDetailScreen(),
-          settings: const RouteSettings(arguments: null),
+          builder: (_) => const ProductDetailScreen(productId: null),
         );
 
       default:
