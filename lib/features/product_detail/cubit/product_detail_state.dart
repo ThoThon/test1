@@ -2,54 +2,57 @@ import 'package:equatable/equatable.dart';
 
 import '../../product_list_page/models/product_model.dart';
 
-enum ProductDetailStatus {
+enum LoadingStatus {
   initial,
   loading,
   loaded,
-  saving,
-  saved,
-  deleting,
-  deleted,
   error,
 }
 
 class ProductDetailState extends Equatable {
-  final ProductDetailStatus status;
+  final LoadingStatus getProductDetailStatus;
+  final LoadingStatus saveProductStatus;
+  final LoadingStatus deleteProductStatus;
+
   final Product? product;
   final String errorMessage;
   final bool isEditMode; // true = edit/update, false = create
-  final bool showDeleteDialog;
 
   const ProductDetailState({
-    this.status = ProductDetailStatus.initial,
+    this.getProductDetailStatus = LoadingStatus.initial,
+    this.saveProductStatus = LoadingStatus.initial,
+    this.deleteProductStatus = LoadingStatus.initial,
     this.product,
     this.errorMessage = '',
     this.isEditMode = false,
-    this.showDeleteDialog = false,
   });
 
   ProductDetailState copyWith({
-    ProductDetailStatus? status,
+    LoadingStatus? getProductDetailStatus,
+    LoadingStatus? saveProductStatus,
+    LoadingStatus? deleteProductStatus,
     Product? product,
     String? errorMessage,
     bool? isEditMode,
-    bool? showDeleteDialog,
   }) {
     return ProductDetailState(
-      status: status ?? this.status,
+      getProductDetailStatus:
+          getProductDetailStatus ?? this.getProductDetailStatus,
+      saveProductStatus: saveProductStatus ?? this.saveProductStatus,
+      deleteProductStatus: deleteProductStatus ?? this.deleteProductStatus,
       product: product ?? this.product,
       errorMessage: errorMessage ?? this.errorMessage,
       isEditMode: isEditMode ?? this.isEditMode,
-      showDeleteDialog: showDeleteDialog ?? this.showDeleteDialog,
     );
   }
 
   @override
   List<Object?> get props => [
-        status,
+        getProductDetailStatus,
+        saveProductStatus,
+        deleteProductStatus,
         product,
         errorMessage,
         isEditMode,
-        showDeleteDialog,
       ];
 }

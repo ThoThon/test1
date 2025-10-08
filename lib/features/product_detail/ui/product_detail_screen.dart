@@ -20,51 +20,16 @@ class ProductDetailScreen extends StatelessWidget {
   }
 }
 
-class _ProductDetailView extends StatefulWidget {
+class _ProductDetailView extends StatelessWidget {
   const _ProductDetailView();
-
-  @override
-  State<_ProductDetailView> createState() => _ProductDetailViewState();
-}
-
-class _ProductDetailViewState extends State<_ProductDetailView> {
-  final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _priceController = TextEditingController();
-  final _quantityController = TextEditingController();
-  final _coverController = TextEditingController();
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _priceController.dispose();
-    _quantityController.dispose();
-    _coverController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<ProductDetailCubit, ProductDetailState>(
       listener: (context, state) {
-        // Load product data vào form
-        if (state.status == ProductDetailStatus.loaded &&
-            state.product != null &&
-            state.isEditMode) {
-          _nameController.text = state.product!.name;
-          _priceController.text = state.product!.price.toString();
-          _quantityController.text = state.product!.quantity.toString();
-          _coverController.text = state.product!.cover;
-        }
-
-        // Show delete dialog
-        if (state.showDeleteDialog) {
-          context.read<ProductDetailCubit>().deleteDialogShown();
-          _showConfirmDeleteDialog(context);
-        }
-
-        // Saved
-        if (state.status == ProductDetailStatus.saved) {
+        // Save success
+        if (state.saveProductStatus == LoadingStatus.loaded) {
+          context.read<ProductDetailCubit>().resetSaveStatus();
           Navigator.pop(context, true);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -78,8 +43,9 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
           );
         }
 
-        // Deleted
-        if (state.status == ProductDetailStatus.deleted) {
+        // Delete success
+        if (state.deleteProductStatus == LoadingStatus.loaded) {
+          context.read<ProductDetailCubit>().resetDeleteStatus();
           Navigator.pop(context, true);
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -89,9 +55,8 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
           );
         }
 
-        // Error
-        if (state.status == ProductDetailStatus.error &&
-            state.errorMessage.isNotEmpty) {
+        // Show error from any operation
+        if (state.errorMessage.isNotEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(state.errorMessage),
@@ -123,17 +88,38 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
   }
 
   Widget _buildBody(BuildContext context, ProductDetailState state) {
-    if (state.status == ProductDetailStatus.loading) {
+    // Show loading when fetching product detail
+    if (state.getProductDetailStatus == LoadingStatus.loading) {
       return const Center(
         child: CircularProgressIndicator(color: Color(0xFFf24e1e)),
       );
     }
 
-    if (state.status == ProductDetailStatus.error &&
+    // Show error if failed to load product detail
+    if (state.getProductDetailStatus == LoadingStatus.error &&
         state.product == null &&
         state.isEditMode) {
       return Center(
-        child: Text("Lỗi: ${state.errorMessage}"),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              "Lỗi: ${state.errorMessage}",
+              style: const TextStyle(color: Colors.red, fontSize: 16),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFf24e1e),
+              ),
+              child: const Text(
+                "Quay lại",
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        ),
       );
     }
 
@@ -141,13 +127,15 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
   }
 
   Widget _buildForm(BuildContext context, ProductDetailState state) {
-    final isLoading = state.status == ProductDetailStatus.saving ||
-        state.status == ProductDetailStatus.deleting;
+    final cubit = context.read<ProductDetailCubit>();
+    final isSaving = state.saveProductStatus == LoadingStatus.loading;
+    final isDeleting = state.deleteProductStatus == LoadingStatus.loading;
+    final isLoading = isSaving || isDeleting;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Form(
-        key: _formKey,
+        key: cubit.formKey,
         child: Column(
           children: [
             if (state.isEditMode && state.product != null) ...[
@@ -155,7 +143,7 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
               const SizedBox(height: 24),
             ],
             InputField(
-              controller: _nameController,
+              controller: cubit.nameController,
               label: "Tên sản phẩm",
               icon: Icons.shopping_bag_outlined,
               hintText: "Nhập tên sản phẩm",
@@ -171,7 +159,7 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
             ),
             const SizedBox(height: 20),
             InputField(
-              controller: _priceController,
+              controller: cubit.priceController,
               label: "Giá bán (VNĐ)",
               icon: Icons.attach_money,
               hintText: "Nhập giá bán",
@@ -180,7 +168,7 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
             ),
             const SizedBox(height: 20),
             InputField(
-              controller: _quantityController,
+              controller: cubit.quantityController,
               label: "Số lượng",
               icon: Icons.inventory_2_outlined,
               hintText: "Nhập số lượng",
@@ -189,7 +177,7 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
             ),
             const SizedBox(height: 20),
             InputField(
-              controller: _coverController,
+              controller: cubit.coverController,
               label: "Đường dẫn ảnh",
               icon: Icons.image_outlined,
               hintText: "Nhập URL hình ảnh",
@@ -201,32 +189,46 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                     children: [
                       Expanded(
                         child: ElevatedButton(
-                          onPressed:
-                              isLoading ? null : () => _handleSave(context),
+                          onPressed: isLoading
+                              ? null
+                              : () => cubit.saveProductFromForm(),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.blue,
                             foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
                           ),
-                          child: Text(
-                              isLoading ? "Đang xử lý..." : "Sửa thông tin"),
+                          child: isSaving
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Text("Sửa thông tin"),
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: ElevatedButton(
-                          onPressed: isLoading
-                              ? null
-                              : () {
-                                  context
-                                      .read<ProductDetailCubit>()
-                                      .requestDelete();
-                                },
+                          onPressed:
+                              isLoading ? null : () => _handleDelete(context),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.red,
                             foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
                           ),
-                          child: Text(
-                              isLoading ? "Đang xử lý..." : "Xóa sản phẩm"),
+                          child: isDeleting
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Text("Xóa sản phẩm"),
                         ),
                       ),
                     ],
@@ -235,12 +237,22 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
                     width: double.infinity,
                     height: 56,
                     child: ElevatedButton(
-                      onPressed: isLoading ? null : () => _handleSave(context),
+                      onPressed:
+                          isLoading ? null : () => cubit.saveProductFromForm(),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFf24e1e),
                         foregroundColor: Colors.white,
                       ),
-                      child: Text(isLoading ? "Đang tạo..." : "Tạo sản phẩm"),
+                      child: isSaving
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Text("Tạo sản phẩm"),
                     ),
                   ),
           ],
@@ -252,22 +264,26 @@ class _ProductDetailViewState extends State<_ProductDetailView> {
   Widget _buildProductImage(String url) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
-      child: Image.network(url, height: 300, fit: BoxFit.cover),
+      child: Image.network(
+        url,
+        height: 300,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            height: 300,
+            color: Colors.grey[300],
+            child: const Icon(
+              Icons.image_not_supported,
+              size: 80,
+              color: Colors.grey,
+            ),
+          );
+        },
+      ),
     );
   }
 
-  void _handleSave(BuildContext context) {
-    if (_formKey.currentState?.validate() ?? false) {
-      context.read<ProductDetailCubit>().saveProduct(
-            name: _nameController.text.trim(),
-            price: int.parse(_priceController.text.trim()),
-            quantity: int.parse(_quantityController.text.trim()),
-            cover: _coverController.text.trim(),
-          );
-    }
-  }
-
-  Future<void> _showConfirmDeleteDialog(BuildContext context) async {
+  Future<void> _handleDelete(BuildContext context) async {
     final result = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(

@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../repositories/product_repository.dart';
@@ -6,6 +7,13 @@ import 'product_detail_state.dart';
 class ProductDetailCubit extends Cubit<ProductDetailState> {
   final int? productId;
 
+  // Text controllers
+  final nameController = TextEditingController();
+  final priceController = TextEditingController();
+  final quantityController = TextEditingController();
+  final coverController = TextEditingController();
+  final formKey = GlobalKey<FormState>();
+
   ProductDetailCubit({this.productId}) : super(const ProductDetailState()) {
     if (productId != null) {
       // Edit mode - fetch product detail
@@ -13,7 +21,7 @@ class ProductDetailCubit extends Cubit<ProductDetailState> {
     } else {
       // Create mode
       emit(state.copyWith(
-        status: ProductDetailStatus.loaded,
+        getProductDetailStatus: LoadingStatus.loaded,
         isEditMode: false,
       ));
     }
@@ -21,7 +29,7 @@ class ProductDetailCubit extends Cubit<ProductDetailState> {
 
   Future<void> fetchProductDetail() async {
     emit(state.copyWith(
-      status: ProductDetailStatus.loading,
+      getProductDetailStatus: LoadingStatus.loading,
       isEditMode: true,
     ));
 
@@ -31,20 +39,26 @@ class ProductDetailCubit extends Cubit<ProductDetailState> {
       );
 
       if (product != null) {
+        // Load data vào controllers
+        nameController.text = product.name;
+        priceController.text = product.price.toString();
+        quantityController.text = product.quantity.toString();
+        coverController.text = product.cover;
+
         emit(state.copyWith(
-          status: ProductDetailStatus.loaded,
+          getProductDetailStatus: LoadingStatus.loaded,
           product: product,
         ));
       } else {
         emit(state.copyWith(
-          status: ProductDetailStatus.error,
+          getProductDetailStatus: LoadingStatus.error,
           errorMessage: "Không tìm thấy thông tin sản phẩm",
         ));
       }
     } catch (e) {
       print('Lỗi fetchProductDetail: $e');
       emit(state.copyWith(
-        status: ProductDetailStatus.error,
+        getProductDetailStatus: LoadingStatus.error,
         errorMessage: "Có lỗi xảy ra khi tải dữ liệu",
       ));
     }
@@ -56,7 +70,7 @@ class ProductDetailCubit extends Cubit<ProductDetailState> {
     required int quantity,
     required String cover,
   }) async {
-    emit(state.copyWith(status: ProductDetailStatus.saving));
+    emit(state.copyWith(saveProductStatus: LoadingStatus.loading));
 
     try {
       if (state.isEditMode && productId != null) {
@@ -71,12 +85,12 @@ class ProductDetailCubit extends Cubit<ProductDetailState> {
 
         if (updatedProduct != null) {
           emit(state.copyWith(
-            status: ProductDetailStatus.saved,
+            saveProductStatus: LoadingStatus.loaded,
             product: updatedProduct,
           ));
         } else {
           emit(state.copyWith(
-            status: ProductDetailStatus.error,
+            saveProductStatus: LoadingStatus.error,
             errorMessage: "Cập nhật sản phẩm thất bại",
           ));
         }
@@ -91,12 +105,12 @@ class ProductDetailCubit extends Cubit<ProductDetailState> {
 
         if (newProduct != null) {
           emit(state.copyWith(
-            status: ProductDetailStatus.saved,
+            saveProductStatus: LoadingStatus.loaded,
             product: newProduct,
           ));
         } else {
           emit(state.copyWith(
-            status: ProductDetailStatus.error,
+            saveProductStatus: LoadingStatus.error,
             errorMessage: "Tạo sản phẩm thất bại",
           ));
         }
@@ -104,7 +118,7 @@ class ProductDetailCubit extends Cubit<ProductDetailState> {
     } catch (e) {
       print('Lỗi saveProduct: $e');
       emit(state.copyWith(
-        status: ProductDetailStatus.error,
+        saveProductStatus: LoadingStatus.error,
         errorMessage: state.isEditMode
             ? "Có lỗi xảy ra khi cập nhật sản phẩm"
             : "Có lỗi xảy ra khi tạo sản phẩm",
@@ -112,18 +126,21 @@ class ProductDetailCubit extends Cubit<ProductDetailState> {
     }
   }
 
-  void requestDelete() {
-    emit(state.copyWith(showDeleteDialog: true));
-  }
+  Future<void> saveProductFromForm() async {
+    if (!(formKey.currentState?.validate() ?? false)) return;
 
-  void deleteDialogShown() {
-    emit(state.copyWith(showDeleteDialog: false));
+    await saveProduct(
+      name: nameController.text.trim(),
+      price: int.parse(priceController.text.trim()),
+      quantity: int.parse(quantityController.text.trim()),
+      cover: coverController.text.trim(),
+    );
   }
 
   Future<void> confirmDelete() async {
     if (productId == null) return;
 
-    emit(state.copyWith(status: ProductDetailStatus.deleting));
+    emit(state.copyWith(deleteProductStatus: LoadingStatus.loading));
 
     try {
       final success = await ProductRepository.deleteProduct(
@@ -131,26 +148,40 @@ class ProductDetailCubit extends Cubit<ProductDetailState> {
       );
 
       if (success) {
-        emit(state.copyWith(status: ProductDetailStatus.deleted));
+        emit(state.copyWith(deleteProductStatus: LoadingStatus.loaded));
       } else {
         emit(state.copyWith(
-          status: ProductDetailStatus.error,
+          deleteProductStatus: LoadingStatus.error,
           errorMessage: "Xóa sản phẩm thất bại",
         ));
       }
     } catch (e) {
       print('Lỗi deleteProduct: $e');
       emit(state.copyWith(
-        status: ProductDetailStatus.error,
+        deleteProductStatus: LoadingStatus.error,
         errorMessage: "Có lỗi xảy ra khi xóa sản phẩm",
       ));
     }
   }
 
   void clearError() {
-    emit(state.copyWith(
-      status: ProductDetailStatus.loaded,
-      errorMessage: '',
-    ));
+    emit(state.copyWith(errorMessage: ''));
+  }
+
+  void resetSaveStatus() {
+    emit(state.copyWith(saveProductStatus: LoadingStatus.initial));
+  }
+
+  void resetDeleteStatus() {
+    emit(state.copyWith(deleteProductStatus: LoadingStatus.initial));
+  }
+
+  @override
+  Future<void> close() {
+    nameController.dispose();
+    priceController.dispose();
+    quantityController.dispose();
+    coverController.dispose();
+    return super.close();
   }
 }
